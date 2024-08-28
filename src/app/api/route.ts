@@ -9,6 +9,7 @@ import { PDFLoader } from "@langchain/community/document_loaders/fs/pdf";
 export async function POST(req: NextRequest) {
   console.log("POST /api/quizz");
   const body = await req.formData();
+  console.log(body);
   const document = body.get("pdf");
   console.log(document);
 
