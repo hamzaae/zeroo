@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label"
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/components/ui/use-toast";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 const notifications = [
   {
@@ -38,6 +39,8 @@ export function CardUpload({ className, ...props }: CardProps) {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
 
+  const router = useRouter();
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!file) {
@@ -59,6 +62,8 @@ export function CardUpload({ className, ...props }: CardProps) {
       if (response.ok) {
         const data = await response.json();
         console.log(data);
+        // router.push('/start/' + JSON.stringify(data));
+        // router.push(`/start/${id}`, { query: { quiz: JSON.stringify(data) } });
       }
 
     } catch (e) {
