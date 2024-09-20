@@ -35,39 +35,51 @@ export default function UploadFile({ setQuizz }: UploadFileProps) {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!file) {
-      setError("File is required");
-      toast({
-        title: error,
-        description: "Please select a file to upload",
-      });
-      return;
+        setError("File is required");
+        toast({ title: error, description: "Please select a file to upload" });
+        return;
     }
     setIsLoading(true);
     const formData = new FormData();
-    formData.append("pdf", file as Blob);
+    formData.append('pdf', file as Blob);
+
     try {
-      const response = await fetch("/api", {
-        method: "POST",
-        body: formData,
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setQuizz(data.quizzObject.quiz); 
-      } else {
-        toast({
-          title: "An error occurred",
-          description: "Please try again later",
+        // First API call to upload PDF and extract texts
+        const uploadResponse = await fetch('/api/upload', {
+            method: 'POST',
+            body: formData
         });
-      }
+
+        if (!uploadResponse.ok) {
+            throw new Error("Failed to upload PDF");
+        }
+
+        const uploadData = await uploadResponse.json();
+        const { texts } = uploadData;
+
+        // Second API call to generate quiz
+        const quizResponse = await fetch('/api/quizz', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ texts })
+        });
+
+        if (quizResponse.ok) {
+            const quizData = await quizResponse.json();
+            console.log(quizData.quizzObject);
+            setQuizz(quizData.quizzObject.quiz);
+        } else {
+            throw new Error("Failed to generate quiz");
+        }
+
     } catch (e) {
-      console.log(e);
-      toast({
-        title: "An error occurred",
-        description: "Please try again later",
-      });
+        console.error(e);
+        toast({ title: "An error occurred", description: "Please try again later" });
     }
+
     setIsLoading(false);
-  };
+}
+
 
   return (
     <>
