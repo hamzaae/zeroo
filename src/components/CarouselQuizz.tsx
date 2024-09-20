@@ -43,9 +43,11 @@ function shuffleArray<T>(array: T[]): T[] {
 }
 
 export function CarouselQuizz({ quizz }: CarouselQuizzProps) {
+  console.log(quizz);
   const [selectedAnswers, setSelectedAnswers] = useState<(number | null)[]>(Array(quizz.questions.length).fill(null));
   const [isDone, setIsDone] = useState<boolean>(false);
   const [score, setScore] = useState<number | null>(null);
+  const [correct, setCorrect] = useState<number | null>(null);
   const [shuffledQuestions, setShuffledQuestions] = useState<Question[]>([]);
 
   // Shuffle the answers for each question when the component mounts
@@ -75,6 +77,7 @@ export function CarouselQuizz({ quizz }: CarouselQuizzProps) {
       return acc;
     }, 0);
 
+    setCorrect(correctAnswers);
     setScore((correctAnswers / quizz.questions.length) * 100);
   };
 
@@ -142,7 +145,7 @@ export function CarouselQuizz({ quizz }: CarouselQuizzProps) {
           </Button>
         ) : (
           <div className="text-xl font-semibold text-center">
-            Your score: {score?.toFixed(2)}%
+            Your score: {correct}/{quizz.questions.length} ( {score?.toFixed(2)} % )
           </div>
         )}
       </div>
