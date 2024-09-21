@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
 
     const selectedDocuments = docs.filter((doc) => doc.pageContent !== undefined);
     const texts = selectedDocuments.map((doc) => doc.pageContent);
-    console.log(texts);
+    // console.log(texts);
 
     return NextResponse.json({ texts }, { status: 200 });
 

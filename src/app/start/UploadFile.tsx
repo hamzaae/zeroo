@@ -59,13 +59,14 @@ export default function UploadFile({ setQuizz }: UploadFileProps) {
 
         if (!process.env.NEXT_PUBLIC_COHERE_API_KEY) {
           console.log("API key not found");
-          return NextResponse.json({ message: "API key not found" }, { status: 500 });
+          setError("API key not found");
+          return;
         }
         
         const model = new ChatCohere({
           apiKey: process.env.NEXT_PUBLIC_COHERE_API_KEY
         });
-        console.log("Model created");
+        // console.log("Model created");
     
         const prompt = `Given the following text, which is a summary of a document, 
         generate a quizz based on the text. Return json only that contains a quizz object with the fields: 
