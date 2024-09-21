@@ -40,63 +40,49 @@ export default function UploadFile({ setQuizz }: UploadFileProps) {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!file) {
-      setError("File is required");
-      toast({
-        title: error,
-        description: "Please select a file to upload",
-      });
+      setError('File is required');
       return;
     }
+  
     setIsLoading(true);
-
+    const formData = new FormData();
+    formData.append('pdf', file as Blob);
+  
     try {
-    console.log("Uploading file");
-    const pdfLoader = new PDFLoader(file as Blob, {
-        parsedItemSeparator: " "
-    });
-    const docs = await pdfLoader.load();
-    // console.log(docs);
-
-    const selectedDocuments = docs.filter((doc) => doc.pageContent !== undefined);
-    const texts = selectedDocuments.map((doc) => doc.pageContent);
-    // console.log(texts);
-
-    if (!process.env.COHERE_API_KEY) {
-      console.log("API key not found");
-      return;
-      // return NextResponse.json({ message: "API key not found" }, { status: 500 });
-    }
-    
-    const model = new ChatCohere({
-      apiKey: process.env.COHERE_API_KEY
-    });
-    // console.log("Model created");
-
-    const prompt = "Given the following text, which is a summary of a document, generate a quizz based on the text. Return json only that contains a quizz object with the fields: name, description and questions. The questions is an array of objects with fields: questionText, answers. The answers field should be an array of objects with the fields: answerText, isCorrect.";
-
-    const message = new HumanMessage(prompt + "\n" + texts.join("\n"));
-    // console.log(message);
-
-    const results = await model.invoke([message]);
-    // console.log(results.content);
-
-    const responseText = (results.content as string).replace(/^```json\s*/, '').replace(/\s*```$/, '');
-    const quizzObject = JSON.parse(responseText);
-    // console.log(quizzObject.quiz); 
-
-    // return NextResponse.json({ quizzObject }, { status: 200 });
-
-    setQuizz(quizzObject.quiz); 
-
-    } catch (e) {
-      console.log(e);
-      toast({
-        title: "An error occurred",
-        description: "Please try again later",
+      // First: Parse the PDF
+      const parseResponse = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
       });
+  
+      if (!parseResponse.ok) {
+        throw new Error('Failed to parse PDF');
+      }
+  
+      const { texts } = await parseResponse.json();
+  
+      // Second: Generate Quiz with parsed texts
+      const quizResponse = await fetch('/api/quizz', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ texts }),
+      });
+  
+      if (quizResponse.ok) {
+        const data = await quizResponse.json();
+        setQuizz(data.quizzObject.quiz); 
+      } else {
+        throw new Error('Failed to generate quiz');
+      }
+  
+    } catch (e) {
+      console.error(e);
+      setError('An error occurred. Please try again later.');
     }
+  
     setIsLoading(false);
   };
+  
 
   return (
     <>
