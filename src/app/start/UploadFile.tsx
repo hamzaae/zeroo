@@ -3,7 +3,6 @@
 import { NextResponse } from "next/server";
 import { ChatCohere } from "@langchain/cohere";
 import { HumanMessage } from "@langchain/core/messages";
-import { PDFLoader } from "@langchain/community/document_loaders/fs/pdf";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,52 +39,65 @@ export default function UploadFile({ setQuizz }: UploadFileProps) {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!file) {
-        setError("File is required");
-        toast({ title: error, description: "Please select a file to upload" });
-        return;
+      setError("File is required");
+      toast({
+        title: error,
+        description: "Please select a file to upload",
+      });
+      return;
     }
-  
     setIsLoading(true);
     const formData = new FormData();
-    formData.append('pdf', file as Blob);
-
+    formData.append("pdf", file as Blob);
     try {
-        // First API call to upload PDF and extract texts
-        const uploadResponse = await fetch('/api/upload', {
-            method: 'POST',
-            body: formData
-        });
+      const response = await fetch("/api", {
+        method: "POST",
+        body: formData,
+      });
+      if (response.ok) {
+        const data = await response.json();
 
-        if (!uploadResponse.ok) {
-            throw new Error("Failed to upload PDF");
+        if (!process.env.NEXT_PUBLIC_COHERE_API_KEY) {
+          console.log("API key not found");
+          return NextResponse.json({ message: "API key not found" }, { status: 500 });
         }
-
-        const uploadData = await uploadResponse.json();
-        const { texts } = uploadData;
-
-        // Second API call to generate quiz
-        const quizResponse = await fetch('/api/quizz', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ texts })
+        
+        const model = new ChatCohere({
+          apiKey: process.env.NEXT_PUBLIC_COHERE_API_KEY
         });
+        console.log("Model created");
+    
+        const prompt = `Given the following text, which is a summary of a document, 
+        generate a quizz based on the text. Return json only that contains a quizz object with the fields: 
+        name, description and questions. The questions is an array of objects with fields: questionText, answers. 
+        The answers field should be an array of objects with the fields: answerText, isCorrect.`;    
+        const message = new HumanMessage(prompt + "\n" + data.texts.join("\n"));
+    
+        const results = await model.invoke([message]);
+    
+        const responseText = (results.content as string).replace(/^```json\s*/, '').replace(/\s*```$/, '');
+        const quizzObject = JSON.parse(responseText);
+        console.log(quizzObject.quiz); 
 
-        if (quizResponse.ok) {
-            const quizData = await quizResponse.json();
-            console.log(quizData.quizzObject);
-            setQuizz(quizData.quizzObject.quiz);
-        } else {
-            throw new Error("Failed to generate quiz");
-        }
 
+        setQuizz(quizzObject.quiz); 
+
+      } else {
+        console.log(e);
+        toast({
+          title: "An error occurred",
+          description: "Please try again later",
+        });
+      }
     } catch (e) {
-        console.error(e);
-        toast({ title: "An error occurred", description: "Please try again later" });
+      console.log(e);
+      toast({
+        title: "An error occurred",
+        description: "Please try again later",
+      });
     }
-
     setIsLoading(false);
-}
-
+  };
 
   return (
     <>
