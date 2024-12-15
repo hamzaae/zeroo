@@ -147,7 +147,7 @@ export default function UploadFile({ setQuizz }: UploadFileProps) {
             Upload
           </Button>
           <ul className="list-disc list-inside mb-4">
-            <li>Max file size: 5MB</li>
+            <li>Max file size: 2MB</li>
             <li>Accepted file type: PDF</li>
           </ul>
         </form>
